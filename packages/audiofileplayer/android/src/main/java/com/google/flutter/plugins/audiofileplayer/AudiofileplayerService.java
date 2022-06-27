@@ -62,8 +62,13 @@ public class AudiofileplayerService extends MediaBrowserServiceCompat
     super.onCreate();
     Log.i(TAG, "onCreate");
     instance = this;
+    PendingIntent pendingItent = PendingIntent.getBroadcast(
+            getApplicationContext(),
+            0, new Intent(Intent.ACTION_MEDIA_BUTTON),
+            PendingIntent.FLAG_IMMUTABLE
+    );
 
-    mediaSession = new MediaSessionCompat(this, TAG);
+    mediaSession = new MediaSessionCompat(this, TAG, null, pendingItent);
     mediaSession.setFlags(
         MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
             | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
@@ -94,6 +99,16 @@ public class AudiofileplayerService extends MediaBrowserServiceCompat
   @Override
   public int onStartCommand(final Intent intent, int flags, int startId) {
     Log.i(TAG, "onStartCommand");
+
+
+    Notification notif = buildNotification();
+    // Display the notification and place the service in the foreground
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      startForeground(NOTIFICATION_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+    } else {
+      startForeground(NOTIFICATION_ID, notif);
+    }
+
     if (intent != null) {
       if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())
           && intent.hasExtra(AudiofileplayerPlugin.CUSTOM_MEDIA_BUTTON_EXTRA_KEY)) {
@@ -137,7 +152,7 @@ public class AudiofileplayerService extends MediaBrowserServiceCompat
     Context context = activity.getApplicationContext();
     Intent intent = new Intent(context, activity.getClass());
     PendingIntent pendingIntent =
-        PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     mediaSession.setSessionActivity(pendingIntent);
   }
 
@@ -322,13 +337,6 @@ public class AudiofileplayerService extends MediaBrowserServiceCompat
       }
 
       if (!mediaSession.isActive()) mediaSession.setActive(true);
-      Notification notif = buildNotification();
-      // Display the notification and place the service in the foreground
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        startForeground(NOTIFICATION_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-      } else {
-        startForeground(NOTIFICATION_ID, notif);
-      }
     }
 
     @Override
